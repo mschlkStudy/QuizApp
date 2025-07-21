@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@Table(name = "study_subject")
 public class StudySubject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,7 +15,7 @@ public class StudySubject {
 
     @ManyToMany
     @JoinTable(
-            name = "subject_modul",
+            name = "study_subject_modules",
             joinColumns = @JoinColumn(name = "study_subject_id"),
             inverseJoinColumns = @JoinColumn(name ="module_id")
     )

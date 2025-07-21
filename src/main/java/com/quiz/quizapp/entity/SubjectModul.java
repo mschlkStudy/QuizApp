@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
+@Table(name = "subject_modul")
 public class SubjectModul {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
