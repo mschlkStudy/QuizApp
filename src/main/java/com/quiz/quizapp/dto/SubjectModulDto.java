@@ -1,6 +1,11 @@
 package com.quiz.quizapp.dto;
 
 public class SubjectModulDto {
+    public SubjectModulDto(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
     public Long getId() {
         return id;
     }

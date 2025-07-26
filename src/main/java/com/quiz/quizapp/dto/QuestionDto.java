@@ -3,6 +3,23 @@ package com.quiz.quizapp.dto;
 import java.util.List;
 
 public class QuestionDto {
+    private Long id;
+    private String questionText;
+    private List<String> answers;
+    private Integer correctAnswerIndex;
+    private Long subjectModulId;
+    private String subjectModulName;
+
+    public Long getStudySubjectId() {
+        return studySubjectId;
+    }
+
+    public void setStudySubjectId(Long studySubjectId) {
+        this.studySubjectId = studySubjectId;
+    }
+
+    private Long studySubjectId;
+
     public Long getId() {
         return id;
     }
@@ -51,10 +68,4 @@ public class QuestionDto {
         this.subjectModulName = subjectModulName;
     }
 
-    private Long id;
-    private String questionText;
-    private List<String> answers;
-    private Integer correctAnswerIndex;
-    private Long subjectModulId;
-    private String subjectModulName;
 }

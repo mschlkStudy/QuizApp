@@ -153,13 +153,18 @@ const submitQuestion = async () => {
     answers: answers.value,
     correctAnswerIndex: correctAnswerIndex.value,
     studySubjectId: selectedStudySubject.value,
-    modulId: selectedSubjectModul.value
+    subjectModulId: selectedSubjectModul.value
   };
 
   try {
-    await api.post('/questions', payload);
-    alert('Frage wurde erfolgreich eingereicht!');
-    router.push('/'); // Zurück zur Hauptseite
+    await api.post('/questions', payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + localStorage.getItem('jwt') || ''
+      }
+    });
+    //alert('Frage wurde erfolgreich eingereicht!');
+    router.push('/overview'); // Zurück zur Hauptseite
   } catch (error) {
     console.error('Fehler beim Einreichen der Frage:', error);
     alert('Fehler beim Einreichen der Frage. Bitte versuchen Sie es später erneut.');

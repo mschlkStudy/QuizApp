@@ -19,6 +19,18 @@ public class Question {
     private Integer correctAnswerIndex;
 
     @ManyToOne
+    @JoinColumn(name="study_subject_id")
+    private StudySubject studySubject;
+
+    public StudySubject getStudySubject() {
+        return studySubject;
+    }
+
+    public void setStudySubject(StudySubject studySubject) {
+        this.studySubject = studySubject;
+    }
+
+    @ManyToOne
     @JoinColumn(name = "modul_id")
     @JsonIgnore
     private SubjectModul subjectModul;

@@ -28,7 +28,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login } from '@/api/axios'
+import { api, login } from '@/api/axios'
 
 const router = useRouter()
 const username = ref('')
@@ -38,9 +38,10 @@ const error = ref('')
 async function handleLogin() {
   try {
     const response = await login(username.value, password.value)
-    localStorage.setItem("jwt", response.data.token)
-    console.log("Login erfolgreich:", response.data)
-    router.push("/overview")
+    localStorage.setItem("jwt", response.data.token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+    console.log("Login erfolgreich:", response.data);
+    router.push("/overview");
   } catch (err) {
     error.value = "Login fehlgeschlagen. Bitte überprüfe deine Eingaben."
     console.error(err)
