@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,4 +62,20 @@ public class QuestionController {
     public ResponseEntity<?> getMe(Authentication authentication) {
         return ResponseEntity.ok(authentication.getName());
     }
+
+    @GetMapping("/random")
+    public ResponseEntity<?> getRandomQuestions(
+            @RequestParam Long subjectModulId,
+            @RequestParam(defaultValue = "10") int amount
+    ) {
+        List<Question> all = questionRepository.findAllByModulId(subjectModulId);
+        Collections.shuffle(all);
+        List<QuestionDto> result = all.stream()
+                .limit(amount)
+                .map(QuestionDto::fromEntity)
+                .toList();
+
+        return ResponseEntity.ok(result);
+    }
+
 }

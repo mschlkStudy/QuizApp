@@ -25,6 +25,14 @@ public class SubjectModul {
     @JsonIgnore
     private List<Question> questions = new ArrayList<>();
 
+    public SubjectModul(Long modulId) {
+        this.id = modulId;
+    }
+
+    public SubjectModul() {
+
+    }
+
 
     // Getter/Setter
     public Long getId() { return id; }

@@ -119,7 +119,6 @@ const loadStudySubjects = async () => {
     studySubjects.value = response.data;
   } catch (error) {
     console.error('Fehler beim Laden der Studienfächer:', error);
-    // Hier könnte eine Fehlerbehandlung erfolgen
   }
 };
 
@@ -137,7 +136,6 @@ const loadModules = async () => {
     selectedSubjectModul.value = ''; // Reset der Modulauswahl
   } catch (error) {
     console.error('Fehler beim Laden der Module:', error);
-    // Hier könnte eine Fehlerbehandlung erfolgen
   }
 };
 

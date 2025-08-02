@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173") // oder dein Frontend-Port
+@CrossOrigin(origins = "http://192.168.0.4:5173") // oder dein Frontend-Port
 public class AuthController {
 
     private final AuthenticationManager authManager;

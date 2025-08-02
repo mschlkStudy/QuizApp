@@ -1,5 +1,7 @@
 package com.quiz.quizapp.dto;
 
+import com.quiz.quizapp.entity.Question;
+
 import java.util.List;
 
 public class QuestionDto {
@@ -9,6 +11,16 @@ public class QuestionDto {
     private Integer correctAnswerIndex;
     private Long subjectModulId;
     private String subjectModulName;
+
+
+    public static QuestionDto fromEntity(Question question) {
+        QuestionDto dto = new QuestionDto();
+        dto.setId(question.getId());
+        dto.setQuestionText(question.getQuestionText());
+        dto.setAnswers(question.getAnswers());
+        dto.setCorrectAnswerIndex(question.getCorrectAnswerIndex());
+        return dto;
+    }
 
     public Long getStudySubjectId() {
         return studySubjectId;

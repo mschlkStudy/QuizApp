@@ -10,7 +10,7 @@ import RegisterView from "@/views/RegisterView.vue";
 
 const routes = [
     { path: '/', redirect: '/login' },
-    { path: '/login', component: LoginView },
+    { path: '/login', name: "Login", component: LoginView },
     { path: '/register', name:"Register", component: RegisterView },
     { path: '/overview', component: OverviewView },
     { path: '/create-question', name: 'CreateQuestion', component: CreateQuestionView },

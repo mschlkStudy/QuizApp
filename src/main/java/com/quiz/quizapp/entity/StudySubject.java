@@ -13,13 +13,24 @@ public class StudySubject {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    public StudySubject(Long module) {
+        this.id = module;
+    }
+
     @ManyToMany
     @JoinTable(
             name = "study_subject_modules",
             joinColumns = @JoinColumn(name = "study_subject_id"),
             inverseJoinColumns = @JoinColumn(name ="module_id")
     )
+
+
+
     private Set<SubjectModul> modules = new HashSet<>();
+
+    public StudySubject() {
+
+    }
 
     public String getName() {
         return name;
