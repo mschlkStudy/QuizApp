@@ -1,6 +1,8 @@
 package com.quiz.quizapp.entity;
 
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -21,18 +23,34 @@ public class GameSession {
     @ManyToOne
     private SubjectModul subjectModul;
 
-    @OneToMany(mappedBy = "gameSession", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<GameSessionQuestion> questions;
+    @ManyToMany
+    @JoinTable(
+            name = "game_session_questions",
+            joinColumns = @JoinColumn(name = "game_session_id"),
+            inverseJoinColumns = @JoinColumn(name = "question_id")
+    )
+    private List<Question> questions;
+
+    @Column(nullable = true)
+    private int currentQuestionIndex = 0;
+    private LocalDateTime startedAt;
+
+    @Column(nullable = true)
+    private int score;
+
+    private String mode;
 
     public GameSession() {}
 
-    public GameSession(Long id, boolean completed, User user, StudySubject studySubject, SubjectModul subjectModul, List<GameSessionQuestion> questions) {
+    public GameSession(Long id, boolean completed, User user, StudySubject studySubject, SubjectModul subjectModul, List<Question> questions, int score,  String mode) {
         this.id = id;
         this.completed = completed;
         this.user = user;
         this.studySubject = studySubject;
         this.subjectModul = subjectModul;
         this.questions = questions;
+        this.score = score;
+        this.mode = mode;
     }
 
     public Long getId() {
@@ -75,14 +93,44 @@ public class GameSession {
         this.subjectModul = subjectModul;
     }
 
-    public List<GameSessionQuestion> getQuestions() {
+    public List<Question> getQuestions() {
         return questions;
     }
 
-    public void setQuestions(List<GameSessionQuestion> questions) {
+    public void setQuestions(List<Question> questions) {
         this.questions = questions;
     }
 
-    // Getter, Setter, Konstruktoren
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public int getCurrentQuestionIndex() {
+        return currentQuestionIndex;
+    }
+
+    public void setCurrentQuestionIndex(int currentQuestionIndex) {
+        this.currentQuestionIndex = currentQuestionIndex;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
 }
 

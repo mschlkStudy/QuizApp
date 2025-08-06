@@ -12,6 +12,11 @@ public class QuestionDto {
     private Long subjectModulId;
     private String subjectModulName;
 
+    public QuestionDto(Long id, String questionText, List<String> answers) {
+    }
+
+    public QuestionDto() {}
+
 
     public static QuestionDto fromEntity(Question question) {
         QuestionDto dto = new QuestionDto();

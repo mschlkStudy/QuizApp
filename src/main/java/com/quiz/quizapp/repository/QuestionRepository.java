@@ -13,7 +13,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("SELECT q FROM Question q WHERE q.subjectModul.id = :modulId")
     List<Question> findAllByModulId(@Param("modulId") Long modulId);
 
-    @Query(value = "SELECT * FROM question WHERE subject_modul_id = :modulId ORDER BY RAND() LIMIT :count", nativeQuery = true)
+    @Query(value = "SELECT * FROM question WHERE modul_id = :modulId ORDER BY RANDOM() LIMIT :count", nativeQuery = true)
     List<Question> findRandomBySubjectModulId(@Param("modulId") Long modulId, @Param("count") int count);
 
 

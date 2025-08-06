@@ -94,15 +94,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from '@/api/axios.js'
 import router from "@/router/index.js";
+import { onBeforeRouteLeave } from 'vue-router'
 
+const sessionId = ref(null)
+const session = ref(null)
 const studySubjects = ref([])
 const subjectModuls = ref([])
-
+const route = useRoute();
 const selectedStudySubject = ref('')
 const selectedModule = ref('')
-
 const questions = ref([])
 const currentQuestionIndex = ref(0)
 const score = ref(0)
@@ -170,13 +173,52 @@ const startGame = async () => {
 }
 
 
-const answerQuestion = (selectedIndex) => {
+const answerQuestion =  async (selectedIndex) => {
   const correct = questions.value[currentQuestionIndex.value].correctAnswerIndex
   if (selectedIndex === correct) {
     score.value++
   }
   currentQuestionIndex.value++
+
+  if (currentQuestionIndex.value === questions.value.length) {
+    try {
+      await api.post(`/gamesessions/${gameSessionId.value}/complete`, {}, {
+        headers: {
+          Authorization: 'Bearer ' + localStorage.getItem('jwt')
+        }
+      })
+    } catch (error) {
+      console.error('Fehler beim Abschließen der Session:', error)
+    }
+  } else {
+    // Zwischenspeichern des aktuellen Index (optional)
+    await updateCurrentIndexAndScore();
+  }
 }
+
+onBeforeRouteLeave((to, from, next) => {
+  if (questionsLoaded.value && gameSessionId.value) {
+    updateCurrentIndexAndScore().finally(() => next())
+  } else {
+    next()
+  }
+})
+
+const updateCurrentIndexAndScore = async () => {
+  try {
+    await api.post(`/gamesessions/${gameSessionId.value}/update-indexAndScore`, {
+      index: currentQuestionIndex.value,
+      score: score.value
+    }, {
+      headers: {
+        Authorization: 'Bearer ' + localStorage.getItem('jwt')
+      }
+    })
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Fortschritts:', error)
+  }
+}
+
 
 const resetGame = () => {
   questionsLoaded.value = false
@@ -185,7 +227,34 @@ const resetGame = () => {
   questions.value = []
 }
 
-onMounted(loadSubjects)
+const loadSession = async () => {
+  try {
+    const response = await api.get(`/gamesessions/${sessionId.value}`, {
+      headers: {
+        Authorization: 'Bearer ' + localStorage.getItem('jwt')
+      }
+    })
+    session.value = response.data;
+    questions.value = session.value.questions;
+    currentQuestionIndex.value = parseInt(route.query.startIndex) || session.value.currentQuestionIndex || 0;
+    score.value = session.value.score || 0;
+    questionsLoaded.value = true;
+    gameSessionId.value = session.value.id;
+  } catch (error) {
+    console.error('Fehler beim Laden der Session:', error)
+  }
+}
+
+onMounted(() => {
+  if (route.query.sessionId) {
+    sessionId.value = route.query.sessionId
+    loadSession()
+  } else {
+    loadSubjects()
+  }
+})
+
+
 </script>
 
 <style scoped>

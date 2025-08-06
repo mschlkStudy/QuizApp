@@ -1,7 +1,7 @@
 <template>
   <div class="overview-container">
     <button class="logout-button" @click="logout" title="Abmelden">🚪</button>
-    <h1 class="title">Willkommen in der Hauptübersicht</h1>
+    <h1 class="title">Willkommen Username noch hinterlegen</h1>
 
     <div class="grid">
       <button class="widget" @click="goToPlayAlone">🎮 Alleine spielen</button>
@@ -13,24 +13,30 @@
     <!-- Neue Sektion: GameSessions -->
     <div class="gamesessions-section">
       <h2>🕒 Offene Spielsessions</h2>
-      <p v-if="openSessions.length === 0">Keine offenen Sessions</p>
-      <ul>
-        <li v-for="session in openSessions" :key="session.id" class="session-item">
-          {{ session.studySubjectName }} – {{ session.modulName }} <br />
-          Gestartet am: {{ formatDate(session.startedAt) }}
-          <button @click="resumeSession(session.id)">Fortsetzen</button>
-        </li>
-      </ul>
+      <div class="session-list">
+        <p v-if="openSessions.length === 0">Keine offenen Sessions</p>
+        <ul>
+          <li v-for="session in openSessions" :key="session.id" class="session-item">
+            <strong>{{ session.studySubjectName }} – {{ session.modulName }}</strong> <br />
+            Gestartet am: {{ formatDate(session.startedAt) }}
+            <button @click="resumeSession(session)">Fortsetzen</button>
+          </li>
+        </ul>
+      </div>
 
       <h2 class="mt-6">✅ Abgeschlossene Spielsessions</h2>
-      <p v-if="completedSessions.length === 0">Noch keine abgeschlossen</p>
-      <ul>
-        <li v-for="session in completedSessions" :key="session.id" class="session-item">
-          {{ session.studySubjectName }} – {{ session.modulName }} <br />
-          Gestartet am: {{ formatDate(session.startedAt) }}
-        </li>
-      </ul>
+      <div class="session-list">
+        <p v-if="completedSessions.length === 0">Noch keine abgeschlossen</p>
+        <ul>
+          <li v-for="session in completedSessions" :key="session.id" class="session-item">
+            <strong>{{ session.studySubjectName }} – {{ session.modulName }} </strong><br />
+            Gestartet am: {{ formatDate(session.startedAt) }} <br />
+            Punktzahl: <strong> {{session.score}} / {{session.questions?.length || '-'}}</strong>
+          </li>
+        </ul>
+      </div>
     </div>
+
   </div>
 </template>
 
@@ -41,6 +47,8 @@ import BackButton from '@/components/BackButton.vue'
 import { api } from '@/api/axios'
 
 const router = useRouter()
+const openSessions = ref([])
+const completedSessions = ref([])
 
 function logout() {
   localStorage.removeItem('jwt');
@@ -57,9 +65,6 @@ function goToCoopPlay() {
   router.push({ name: 'CoopPlay' })
 }
 
-// Sessions laden
-const openSessions = ref([])
-const completedSessions = ref([])
 
 const loadSessions = async () => {
   try {
@@ -68,19 +73,59 @@ const loadSessions = async () => {
         Authorization: 'Bearer ' + localStorage.getItem('jwt')
       }
     })
-    const allSessions = response.data
+    openSessions.value = response.data
 
-    openSessions.value = allSessions.filter(s => !s.completed)
-    completedSessions.value = allSessions.filter(s => s.completed)
+    // openSessions.value = allSessions.filter(s => !s.completed)
+    // completedSessions.value = allSessions.filter(s => s.completed)
   } catch (error) {
     console.error('Fehler beim Laden der Sessions:', error)
   }
 }
 
-// Weiter an Spiel weiterleiten
-const resumeSession = (sessionId) => {
-  router.push({ name: 'PlayAlone', query: { sessionId } })
+const loadCompletedSessions = async () => {
+  try {
+    const response = await api.get('/gamesessions/completed', {
+      headers: {
+        Authorization: 'Bearer ' + localStorage.getItem('jwt')
+      }
+    })
+     completedSessions.value = response.data
+
+    // openSessions.value = allSessions.filter(s => !s.completed)
+    // completedSessions.value = allSessions.filter(s => s.completed)
+  } catch (error) {
+    console.error('Fehler beim Laden der abgeschlossenen Sessions:', error)
+  }
 }
+
+// Weiter an Spiel weiterleiten
+const resumeSession = async (session) => {
+  try {
+    const response = await api.get(`/gamesessions/${session.id}`, {
+      headers: {
+        Authorization: 'Bearer ' + localStorage.getItem('jwt')
+      }
+    });
+
+    const sessionData = response.data;
+
+    router.push({
+      name: 'PlayAlone',
+      query: {
+        sessionId: sessionData.id,
+        startIndex: sessionData.currentQuestionIndex || 0
+      },
+      state: {
+        sessionData // Optional: wenn du Zustand mitgeben willst (z. B. in Pinia oder über router state)
+      }
+    });
+  } catch (error) {
+    console.error('Fehler beim Laden der Session:', error);
+    alert('Die Session konnte nicht geladen werden.');
+  }
+};
+
+
 
 const formatDate = (isoDate) => {
   const date = new Date(isoDate)
@@ -90,7 +135,10 @@ const formatDate = (isoDate) => {
   })
 }
 
-onMounted(loadSessions)
+onMounted(() => {
+  loadSessions();
+  loadCompletedSessions();
+})
 </script>
 
 <style scoped>
@@ -145,12 +193,25 @@ onMounted(loadSessions)
   color: #444;
 }
 
+.session-list {
+   max-height: 250px;
+   overflow-y: auto;
+   border: 1px solid #ccc;
+   border-radius: 10px;
+   padding: 0.5rem 1rem;
+   margin-bottom: 1rem;
+   background-color: #f9f9f9;
+   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+ }
+
 .session-item {
-  background: #f9f9f9;
-  border-radius: 8px;
-  padding: 1rem;
   margin-bottom: 1rem;
-  border: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #ddd;
+}
+
+.session-item:last-child {
+  border-bottom: none;
 }
 
 .session-item button {

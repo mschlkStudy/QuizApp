@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface GameSessionRepository extends JpaRepository<GameSession, Long> {
     List<GameSession> findByUserUsernameAndCompletedFalse(String username);
+    List<GameSession> findByUserUsernameAndCompletedTrue(String username);
     Optional<GameSession> findByIdAndUserUsername(Long id, String username);
 }
