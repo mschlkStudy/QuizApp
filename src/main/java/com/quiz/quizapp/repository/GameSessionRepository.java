@@ -10,4 +10,8 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
     List<GameSession> findByUserUsernameAndCompletedFalse(String username);
     List<GameSession> findByUserUsernameAndCompletedTrue(String username);
     Optional<GameSession> findByIdAndUserUsername(Long id, String username);
+
+    Optional<GameSession> findFirstByModeAndSubjectModulIdAndStudySubjectId(
+            GameSession.SessionMode mode, Long modulId, Long subjectId
+    );
 }

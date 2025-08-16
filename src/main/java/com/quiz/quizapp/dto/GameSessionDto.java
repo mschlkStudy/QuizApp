@@ -1,5 +1,6 @@
 package com.quiz.quizapp.dto;
 
+import com.quiz.quizapp.entity.GameSession;
 import com.quiz.quizapp.entity.StudySubject;
 import com.quiz.quizapp.entity.SubjectModul;
 import com.quiz.quizapp.entity.User;
@@ -20,11 +21,11 @@ public class GameSessionDto {
     private boolean completed = false;
     private LocalDateTime startedAt;
     private int score;
-    private String mode;
+    private GameSession.SessionMode mode;
 
 
 
-    public GameSessionDto(Long id, String studySubjectName, String modulName, List<QuestionDto> questionDtos, String username, int currentQuestionIndex, boolean completed, LocalDateTime startedAt, int score, String mode) {
+    public GameSessionDto(Long id, String studySubjectName, String modulName, List<QuestionDto> questionDtos, String username, int currentQuestionIndex, boolean completed, LocalDateTime startedAt, int score, GameSession.SessionMode mode) {
         this.id = id;
         this.studySubjectName = studySubjectName;
         this.modulName = modulName;
@@ -131,11 +132,11 @@ public class GameSessionDto {
         this.score = score;
     }
 
-    public String getMode() {
+    public GameSession.SessionMode getMode() {
         return mode;
     }
 
-    public void setMode(String mode) {
+    public void setMode(GameSession.SessionMode mode) {
         this.mode = mode;
     }
 }

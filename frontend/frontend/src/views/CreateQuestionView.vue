@@ -1,6 +1,13 @@
 <template>
   <div class="create-container">
-    <back-button />
+    <div class="top-right-controls">
+      <router-link to="/overview" class="home-button" title="Zur Übersicht">
+        <!-- Haus-Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12L2 13m10-11L12 2m10 11l1-1m-1 1l-9-9-9 9M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6" />
+        </svg>
+      </router-link>
+    </div>
     <h1>Frage einreichen</h1>
 
     <form @submit.prevent="submitQuestion" class="question-form">
@@ -231,5 +238,19 @@ button {
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
+}
+.icon {
+  width: 24px;
+  height: 24px;
+  stroke: #333;
+}
+
+.top-right-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 </style>

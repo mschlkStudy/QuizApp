@@ -1,12 +1,17 @@
 package com.quiz.quizapp.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.Session;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 public class GameSession {
+
+    public enum SessionMode {
+        SINGLE, DUEL, WAITING
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,11 +43,11 @@ public class GameSession {
     @Column(nullable = true)
     private int score;
 
-    private String mode;
+    private SessionMode mode = SessionMode.SINGLE;
 
     public GameSession() {}
 
-    public GameSession(Long id, boolean completed, User user, StudySubject studySubject, SubjectModul subjectModul, List<Question> questions, int score,  String mode) {
+    public GameSession(Long id, boolean completed, User user, StudySubject studySubject, SubjectModul subjectModul, List<Question> questions, int score,  SessionMode mode) {
         this.id = id;
         this.completed = completed;
         this.user = user;
@@ -125,11 +130,11 @@ public class GameSession {
         this.score = score;
     }
 
-    public String getMode() {
+    public SessionMode getMode() {
         return mode;
     }
 
-    public void setMode(String mode) {
+    public void setMode(SessionMode mode) {
         this.mode = mode;
     }
 }

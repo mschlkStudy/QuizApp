@@ -41,7 +41,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/questions").authenticated()
-                    .requestMatchers("/api/gamesessions/**").authenticated()
+                .requestMatchers("/api/gamesessions/**").authenticated()
+                .requestMatchers("/api/duels/**").authenticated()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

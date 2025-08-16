@@ -1,123 +1,167 @@
 <template>
   <div class="overview-container">
-    <button class="logout-button" @click="logout" title="Abmelden">🚪</button>
-    <h1 class="title">Willkommen Username noch hinterlegen</h1>
+    <div class="header-row">
+      <div class="user-info">Angemeldet als: {{ username }}</div>
+      <button class="logout-button" @click="logout" title="Abmelden">🚪</button>
+    </div>
+    <h1 class="title">Willkommen {{ username }}</h1>
 
     <div class="grid">
       <button class="widget" @click="goToPlayAlone">🎮 Alleine spielen</button>
       <button class="widget" @click="goToCoopPlay">🤝 Im Team spielen</button>
-      <button class="widget">⚔️ Gegen Kommilitonen spielen</button>
+      <button class="widget" @click="goToPlayAgainst">⚔️ Gegen Kommilitonen spielen</button>
       <button class="widget" @click="goToCreateQuestion">✍️ Frage einreichen</button>
     </div>
 
     <!-- Neue Sektion: GameSessions -->
     <div class="gamesessions-section">
-      <h2>🕒 Offene Spielsessions</h2>
-      <div class="session-list">
-        <p v-if="openSessions.length === 0">Keine offenen Sessions</p>
-        <ul>
-          <li v-for="session in openSessions" :key="session.id" class="session-item">
-            <strong>{{ session.studySubjectName }} – {{ session.modulName }}</strong> <br />
-            Gestartet am: {{ formatDate(session.startedAt) }}
-            <button @click="resumeSession(session)">Fortsetzen</button>
-          </li>
-        </ul>
+      <div class="gamesessions-solo">
+        <h2>🕒 Offene Spielsessions</h2>
+        <div class="session-list">
+          <p v-if="openSessions.length === 0">Keine offenen Sessions</p>
+          <ul>
+            <li v-for="session in openSessions" :key="session.id" class="session-item">
+              <strong>{{ session.studySubjectName }} – {{ session.modulName }}</strong> <br />
+              Gestartet am: {{ formatDate(session.startedAt) }}
+              <button @click="resumeSession(session)">Fortsetzen</button>
+            </li>
+          </ul>
+        </div>
+        <h2 class="mt-6">✅ Abgeschlossene Spielsessions</h2>
+        <div class="session-list">
+          <p v-if="completedSessions.length === 0">Noch keine abgeschlossen</p>
+          <ul>
+            <li v-for="session in completedSessions" :key="session.id" class="session-item">
+              <strong>{{ session.studySubjectName }} – {{ session.modulName }} </strong><br />
+              Gestartet am: {{ formatDate(session.startedAt) }} <br />
+              Punktzahl: <strong> {{session.score}} / {{session.questions?.length || '-'}}</strong>
+            </li>
+          </ul>
+        </div>
       </div>
-
-      <h2 class="mt-6">✅ Abgeschlossene Spielsessions</h2>
-      <div class="session-list">
-        <p v-if="completedSessions.length === 0">Noch keine abgeschlossen</p>
-        <ul>
-          <li v-for="session in completedSessions" :key="session.id" class="session-item">
-            <strong>{{ session.studySubjectName }} – {{ session.modulName }} </strong><br />
-            Gestartet am: {{ formatDate(session.startedAt) }} <br />
-            Punktzahl: <strong> {{session.score}} / {{session.questions?.length || '-'}}</strong>
-          </li>
-        </ul>
+      <div class="gamesessions-duell">
+        <h2>🕒 Offene Duellsessions</h2>
+        <div class="session-list">
+          <p v-if="openDuels.length === 0">Keine offenen Sessions</p>
+          <ul>
+            <li v-for="session in openDuels" :key="session.id" class="session-item">
+              <strong>{{ session.subjectName }} – {{ session.modulName }}</strong> <br />
+              Player 1: {{session.player1}} || Player 2: {{session.player2}} <br />
+              Status: {{session.status}} <br />
+              <button @click="resumeDuellSession(session)">Fortsetzen</button>
+            </li>
+          </ul>
+        </div>
+        <h2 class="mt-6">✅ Abgeschlossene Duellsession</h2>
+        <div class="session-list">
+          <p v-if="completedDuels.length === 0">Noch keine abgeschlossen</p>
+          <ul>
+            <li v-for="session in completedDuels" :key="session.id" class="session-item">
+              <strong>{{ session.subjectName }} – {{ session.modulName }} </strong><br />
+              <strong>Ergebnis:</strong>  {{session.player1Score}} / {{session.player2Score}}<br />
+              <strong>Sieger:</strong>  {{session.winner}}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import BackButton from '@/components/BackButton.vue'
 import { api } from '@/api/axios'
 
 const router = useRouter()
 const openSessions = ref([])
 const completedSessions = ref([])
+const openDuels = ref([])
+const completedDuels = ref([])
+
+const username = ref('');
 
 function logout() {
   localStorage.removeItem('jwt');
   router.push({ name: 'Login' });
 }
 
-function goToCreateQuestion() {
-  router.push({ name: 'CreateQuestion' })
-}
-function goToPlayAlone() {
-  router.push({ name: 'PlayAlone' })
-}
-function goToCoopPlay() {
-  router.push({ name: 'CoopPlay' })
-}
+function goToCreateQuestion() { router.push({ name: 'CreateQuestion' }) }
+function goToPlayAlone() { router.push({ name: 'PlayAlone' }) }
+function goToCoopPlay() { router.push({ name: 'CoopPlay' }) }
+function goToPlayAgainst() { router.push({ name: 'PlayAgainst' }) }
 
+function decodeJwt(token) {
+  try {
+    const payload = token.split('.')[1];
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const parsed = JSON.parse(json);
+    return parsed['username'] || parsed['sub'] || '';
+  } catch(err) {
+    return '';
+  }
+}
 
 const loadSessions = async () => {
   try {
     const response = await api.get('/gamesessions/open', {
-      headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('jwt')
-      }
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
     })
     openSessions.value = response.data
-
-    // openSessions.value = allSessions.filter(s => !s.completed)
-    // completedSessions.value = allSessions.filter(s => s.completed)
   } catch (error) {
     console.error('Fehler beim Laden der Sessions:', error)
+  }
+}
+
+const loadDuelSessions = async () => {
+  try {
+    const resOpen = await api.get('/duels/overview/open', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    });
+    openDuels.value = resOpen.data;
+  } catch (error) {
+    console.error('Fehler beim Laden der offenen Duellsessions:', error);
+  }
+};
+
+const loadCompletedDuelSessions = async () => {
+  try {
+    const resCompleted = await api.get('/duels/overview/completed', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    });
+    completedDuels.value = resCompleted.data;
+  } catch (error) {
+    console.error('Fehler beim Laden der abgeschlossenen Duellsessions:', error);
   }
 }
 
 const loadCompletedSessions = async () => {
   try {
     const response = await api.get('/gamesessions/completed', {
-      headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('jwt')
-      }
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
     })
-     completedSessions.value = response.data
-
-    // openSessions.value = allSessions.filter(s => !s.completed)
-    // completedSessions.value = allSessions.filter(s => s.completed)
+    completedSessions.value = response.data
   } catch (error) {
     console.error('Fehler beim Laden der abgeschlossenen Sessions:', error)
   }
 }
 
-// Weiter an Spiel weiterleiten
 const resumeSession = async (session) => {
   try {
     const response = await api.get(`/gamesessions/${session.id}`, {
-      headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('jwt')
-      }
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
     });
-
     const sessionData = response.data;
-
     router.push({
       name: 'PlayAlone',
       query: {
         sessionId: sessionData.id,
         startIndex: sessionData.currentQuestionIndex || 0
       },
-      state: {
-        sessionData // Optional: wenn du Zustand mitgeben willst (z. B. in Pinia oder über router state)
-      }
+      state: { sessionData }
     });
   } catch (error) {
     console.error('Fehler beim Laden der Session:', error);
@@ -125,7 +169,25 @@ const resumeSession = async (session) => {
   }
 };
 
-
+const resumeDuellSession = async (session) => {
+  try {
+    const response = await api.get(`/duels/${session.id}`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    });
+    const sessionData = response.data;
+    router.push({
+      name: 'PlayAgainst',
+      query: {
+        sessionId: sessionData.id,
+        startIndex: sessionData.currentQuestionIndex || 0
+      },
+      state: { sessionData }
+    });
+  } catch (error) {
+    console.error('Fehler beim Laden der Session:', error);
+    alert('Die Session konnte nicht geladen werden.');
+  }
+};
 
 const formatDate = (isoDate) => {
   const date = new Date(isoDate)
@@ -136,8 +198,14 @@ const formatDate = (isoDate) => {
 }
 
 onMounted(() => {
+  // Username extrahieren
+  const jwt = localStorage.getItem('jwt');
+  if (jwt) username.value = decodeJwt(jwt);
+
   loadSessions();
   loadCompletedSessions();
+  loadDuelSessions();
+  loadCompletedDuelSessions();
 })
 </script>
 
@@ -148,6 +216,29 @@ onMounted(() => {
   align-items: center;
   padding: 2rem;
   font-family: Arial, sans-serif;
+}
+
+.header-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.user-info {
+  font-size: 1.05rem;
+  color: #333;
+  font-weight: 600;
+  margin-left: 0.2rem;
+}
+
+.logout-button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  margin-right: 0.2rem;
 }
 
 .title {
@@ -167,9 +258,9 @@ onMounted(() => {
 
 .widget {
   padding: 1.5rem;
-  background-color: #0077cc;
-  color: white;
-  border: none;
+  background-color: #b2d0e7;
+  color: black;
+  border: 1px solid;
   border-radius: 12px;
   font-size: 1.1rem;
   font-weight: bold;
@@ -182,9 +273,16 @@ onMounted(() => {
 }
 
 .gamesessions-section {
-  width: 100%;
-  max-width: 600px;
-  text-align: left;
+  width: 90%;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.gamesessions-solo,
+.gamesessions-duell {
+  flex: 1;
 }
 
 .gamesessions-section h2 {
@@ -194,15 +292,15 @@ onMounted(() => {
 }
 
 .session-list {
-   max-height: 250px;
-   overflow-y: auto;
-   border: 1px solid #ccc;
-   border-radius: 10px;
-   padding: 0.5rem 1rem;
-   margin-bottom: 1rem;
-   background-color: #f9f9f9;
-   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
- }
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
 
 .session-item {
   margin-bottom: 1rem;
@@ -217,10 +315,12 @@ onMounted(() => {
 .session-item button {
   margin-top: 0.5rem;
   padding: 0.5rem 1rem;
-  background-color: #0077cc;
+  background-color:#b2d0e7;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
+
+.mt-6 { margin-top: 1.5rem; }
 </style>

@@ -22,13 +22,15 @@ public class GameSessionService {
     private final UserRepository userRepo;
     private final StudySubjectRepository subjectRepo;
     private final SubjectModulRepository modulRepo;
+    private final QuestionSetRepository questionSetRepo;
 
-    public GameSessionService(GameSessionRepository sessionRepo, QuestionRepository questionRepo, UserRepository userRepo, StudySubjectRepository subjectRepo, SubjectModulRepository modulRepo) {
+    public GameSessionService(GameSessionRepository sessionRepo, QuestionRepository questionRepo, UserRepository userRepo, StudySubjectRepository subjectRepo, SubjectModulRepository modulRepo, QuestionSetRepository questionSetRepo) {
         this.sessionRepo = sessionRepo;
         this.questionRepo = questionRepo;
         this.userRepo = userRepo;
         this.subjectRepo = subjectRepo;
         this.modulRepo = modulRepo;
+        this.questionSetRepo = questionSetRepo;
     }
 
     public GameSession createNewSession(String username, Long subjectId, Long modulId, int amount) {
@@ -98,8 +100,6 @@ public class GameSessionService {
         return sessionRepo.findByUserUsernameAndCompletedTrue(username);
     }
 
-
-
     @Transactional(readOnly = true)
     public GameSessionDto toDto(GameSession session) {
         List<QuestionDto> questionDtos = new ArrayList<>();
@@ -107,7 +107,7 @@ public class GameSessionService {
         String username = session.getUser().getUsername();
         String subjectName = session.getStudySubject().getName();
         String modulName = session.getSubjectModul().getName();
-        String mode = session.getMode();
+        GameSession.SessionMode mode = session.getMode();
         LocalDateTime startedAt = session.getStartedAt();
         int score = session.getScore();
         boolean completed = session.isCompleted();

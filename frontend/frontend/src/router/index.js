@@ -7,6 +7,7 @@ import CreateQuestionView from "@/views/CreateQuestionView.vue";
 import PlayAloneView from "@/views/PlayAloneView.vue";
 import CoopPlayView from "@/views/CoopPlayView.vue";
 import RegisterView from "@/views/RegisterView.vue";
+import PlayAgainstView from "@/views/PlayAgainstView.vue";
 
 const routes = [
     { path: '/', redirect: '/login' },
@@ -15,7 +16,8 @@ const routes = [
     { path: '/overview', component: OverviewView },
     { path: '/create-question', name: 'CreateQuestion', component: CreateQuestionView },
     { path: '/play-alone', name: "PlayAlone", component: PlayAloneView},
-    { path: '/coop-play', name: 'CoopPlay', component: CoopPlayView}
+    { path: '/coop-play', name: 'CoopPlay', component: CoopPlayView},
+    {path: '/play-against', name: 'PlayAgainst', component: PlayAgainstView},
 ]
 
 const router = createRouter({
