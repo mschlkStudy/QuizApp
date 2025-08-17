@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/questions").authenticated()
                 .requestMatchers("/api/gamesessions/**").authenticated()
                 .requestMatchers("/api/duels/**").authenticated()
+                .requestMatchers("/api/coop-session/**").authenticated()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

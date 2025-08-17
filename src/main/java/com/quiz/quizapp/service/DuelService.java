@@ -2,21 +2,15 @@ package com.quiz.quizapp.service;
 
 import com.quiz.quizapp.dto.CompletedDuelDto;
 import com.quiz.quizapp.dto.DuelSessionDto;
-import com.quiz.quizapp.dto.GameSessionDto;
 import com.quiz.quizapp.dto.QuestionDto;
 import com.quiz.quizapp.entity.DuelSession;
 import com.quiz.quizapp.entity.DuelSession.DuelStatus;
-import com.quiz.quizapp.entity.GameSession;
 import com.quiz.quizapp.entity.Question;
-import com.quiz.quizapp.entity.User;
-import com.quiz.quizapp.mapper.QuestionMapper;
 import com.quiz.quizapp.repository.DuelSessionRepository;
 import com.quiz.quizapp.repository.QuestionRepository;
-import com.quiz.quizapp.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,15 +20,9 @@ import java.util.Optional;
 public class DuelService {
 
     private final DuelSessionRepository duelSessionRepository;
-    private final QuestionService questionService;
-    private final UserRepository userRepository;
     private final QuestionRepository questionRepo;
-
-
-    public DuelService(DuelSessionRepository duelSessionRepository, QuestionService questionService, UserRepository userRepository, QuestionRepository questionRepo) {
+    public DuelService(DuelSessionRepository duelSessionRepository, QuestionRepository questionRepo) {
         this.duelSessionRepository = duelSessionRepository;
-        this.questionService = questionService;
-        this.userRepository = userRepository;
         this.questionRepo = questionRepo;
     }
 

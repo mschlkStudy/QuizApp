@@ -64,6 +64,33 @@
           </ul>
         </div>
       </div>
+      <div class="gamesessions-coop">
+        <h2>🕒 Offene Coop-Sessions</h2>
+        <div class="session-list">
+          <p v-if="openCoopSessions.length === 0">Keine offenen Coop-Sessions</p>
+          <ul>
+            <li v-for="session in openCoopSessions" :key="session.id" class="session-item">
+              <strong>{{ session.subjectName }} – {{ session.modulName }}</strong> <br />
+              Spieler: {{ session.players.map(p => p.username).join(', ') }} <br />
+              Status: {{ session.status }} <br />
+              <button @click="joinSession(session)">Beitreten</button>
+            </li>
+          </ul>
+        </div>
+
+        <h2 class="mt-6">✅ Abgeschlossene Coop-Sessions</h2>
+        <div class="session-list">
+          <p v-if="completedCoopSessions.length === 0">Noch keine abgeschlossen</p>
+          <ul>
+            <li v-for="session in completedCoopSessions" :key="session.id" class="session-item">
+              <strong>{{ session.subjectName }} – {{ session.modulName }}</strong><br />
+              Spieler: {{ session.players.map(p => p.username).join(', ') }} <br />
+              Ergebnis: {{ session.score }} / {{ session.questions?.length || '-' }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -78,7 +105,8 @@ const openSessions = ref([])
 const completedSessions = ref([])
 const openDuels = ref([])
 const completedDuels = ref([])
-
+const openCoopSessions = ref([])
+const completedCoopSessions = ref([])
 const username = ref('');
 
 function logout() {
@@ -148,6 +176,28 @@ const loadCompletedSessions = async () => {
     console.error('Fehler beim Laden der abgeschlossenen Sessions:', error)
   }
 }
+const loadCoopSessions = async () => {
+  try {
+    const resOpen = await api.get('/coop-session/overview/open', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    });
+    openCoopSessions.value = resOpen.data;
+  } catch (error) {
+    console.error('Fehler beim Laden der offenen CoopSessions:', error);
+  }
+};
+
+const loadCompletedCoopSessions = async () => {
+  try {
+    const resCompleted = await api.get('/coop-session/overview/completed', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    });
+    completedCoopSessions.value = resCompleted.data;
+  } catch (error) {
+    console.error('Fehler beim Laden der abgeschlossenen CoopSessions:', error);
+  }
+};
+
 
 const resumeSession = async (session) => {
   try {
@@ -189,6 +239,46 @@ const resumeDuellSession = async (session) => {
   }
 };
 
+const resumeCoopSession = async (session) => {
+  try {
+    const response = await api.get(`/coop-session/${session.id}/join`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    });
+    const sessionData = response.data;
+    router.push({
+      name: 'CoopPlay',
+      query: {
+        sessionId: sessionData.id,
+        startIndex: sessionData.currentQuestionIndex || 0
+      },
+      state: { sessionData }
+    });
+  } catch (error) {
+    console.error('Fehler beim Laden der Coop-Session:', error);
+    alert('Die Coop-Session konnte nicht geladen werden.');
+  }
+};
+
+const joinSession = async (session) => {
+  try {
+    const res = await api.post(`/coop-session/${session.id}/join`, {}, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    })
+    const session = res.data
+    coopSessionId.value = session.id
+    questions.value = session.questions
+    players.value = session.players
+    currentQuestionIndex.value = 0
+    score.value = 0
+    questionsLoaded.value = true
+  } catch (err) {
+    console.error('Fehler beim Beitreten zur Session', err)
+    alert('Konnte Session nicht beitreten.')
+  }
+}
+
+
+
 const formatDate = (isoDate) => {
   const date = new Date(isoDate)
   return date.toLocaleString('de-DE', {
@@ -198,7 +288,6 @@ const formatDate = (isoDate) => {
 }
 
 onMounted(() => {
-  // Username extrahieren
   const jwt = localStorage.getItem('jwt');
   if (jwt) username.value = decodeJwt(jwt);
 
@@ -206,7 +295,10 @@ onMounted(() => {
   loadCompletedSessions();
   loadDuelSessions();
   loadCompletedDuelSessions();
+  loadCoopSessions();
+  loadCompletedCoopSessions();
 })
+
 </script>
 
 <style scoped>
@@ -316,8 +408,8 @@ onMounted(() => {
   margin-top: 0.5rem;
   padding: 0.5rem 1rem;
   background-color:#b2d0e7;
-  color: white;
-  border: none;
+  color: black;
+  border: 1px solid;
   border-radius: 8px;
   cursor: pointer;
 }

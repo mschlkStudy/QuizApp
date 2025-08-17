@@ -15,7 +15,7 @@
 
     <h1>Gemeinsam spielen</h1>
 
-    <!-- Auswahl Studienfach / Modul + Mitspieler -->
+    <!-- Auswahl + laufende Sessions -->
     <div v-if="!questionsLoaded" class="form-section">
       <div class="form-group">
         <label for="studySubject">Studienfach</label>
@@ -37,19 +37,46 @@
         </select>
       </div>
 
-      <div class="form-group">
-        <label for="inviteUser">Mitspieler einladen (Username)</label>
-        <input id="inviteUser" v-model="invitedUser" placeholder="z.B. maxmustermann" />
-      </div>
-
-      <button class="start-button" @click="startCoopGame" :disabled="!selectedModule || !invitedUser">
+      <button class="start-button" @click="startOrJoinCoopGame" :disabled="!selectedModule">
         Coop-Spiel starten
       </button>
+
+      <!-- Laufende Sessions -->
+      <div class="form-group" v-if="openSessions.length > 0">
+        <h2>Laufende Coop-Sessions</h2>
+        <ul>
+          <li v-for="session in openSessions" :key="session.id" class="session-item">
+            <div>
+              <strong>{{ session.moduleName }}</strong> – Spieler:
+              <span v-for="p in session.players" :key="p.username">
+                {{ p.username }} ({{ p.email }})
+              </span>
+            </div>
+            <button
+                class="start-button"
+                @click="joinSession(session.id)"
+                :disabled="session.players.length >= 4">
+              Beitreten
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <!-- Fragen -->
     <div v-else-if="currentQuestionIndex < questions.length" class="form-section">
       <h2>Frage {{ currentQuestionIndex + 1 }} von {{ questions.length }}</h2>
+
+      <!-- Spielerübersicht -->
+      <div class="players-box">
+        <h3>Spieler</h3>
+        <ul>
+          <li v-for="p in players" :key="p.username">
+            {{ p.username }} ({{ p.email }})
+          </li>
+        </ul>
+      </div>
+
       <p class="question-text">{{ currentQuestion.questionText }}</p>
 
       <div class="answer-list">
@@ -63,7 +90,14 @@
     <div v-else class="form-section">
       <h2>Spiel beendet!</h2>
       <p>Deine Punkte: <strong>{{ score }}</strong></p>
-      <p>Mitspieler: {{ invitedUser }}</p>
+      <div class="players-box">
+        <h3>Mitspieler</h3>
+        <ul>
+          <li v-for="p in players" :key="p.username">
+            {{ p.username }} ({{ p.email }})
+          </li>
+        </ul>
+      </div>
       <button @click="resetGame" class="start-button">Nochmal spielen</button>
       <button @click="goToOverview" class="start-button">Zurück zur Übersicht</button>
     </div>
@@ -71,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { api } from '@/api/axios.js'
 import router from '@/router/index.js'
@@ -86,6 +120,9 @@ const currentQuestionIndex = ref(0)
 const score = ref(0)
 const questionsLoaded = ref(false)
 const coopSessionId = ref(null)
+const players = ref([])
+const openSessions = ref([])
+let pollingInterval = null
 
 const route = useRoute()
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
@@ -113,20 +150,33 @@ const loadModules = async () => {
   }
 }
 
+const loadOpenSessions = async () => {
+  try {
+    const res = await api.get('/coop-session/overview/open', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+    })
+    openSessions.value = res.data
+  } catch (err) {
+    console.error('Fehler beim Laden der offenen Sessions', err)
+  }
+}
+
 const startCoopGame = async () => {
   try {
-    const res = await api.post('/coop-sessions/start', {}, {
+    const res = await api.post('/coop-session/create', {}, {
       params: {
         subjectId: selectedStudySubject.value,
         modulId: selectedModule.value,
-        invitedUser: invitedUser.value,
-        amount: 10
+        amount: 10,
+        subjectName: selectedStudySubject.value,
+        modulName: selectedModule.value,
       },
       headers: { Authorization: 'Bearer ' + (localStorage.getItem('jwt') || '') }
     })
     const session = res.data
     coopSessionId.value = session.id
     questions.value = session.questions
+    players.value = session.players
     currentQuestionIndex.value = 0
     score.value = 0
     questionsLoaded.value = true
@@ -135,6 +185,27 @@ const startCoopGame = async () => {
     alert('Spiel konnte nicht gestartet werden.')
   }
 }
+
+const startOrJoinCoopGame = async () => {
+  try {
+    const res = await api.post('/coop-session/start-or-join', {}, {
+      params: {
+        subjectId: selectedStudySubject.value,
+        modulId: selectedModule.value,
+        amount: 10,
+        subjectName: selectedStudySubject.value,
+        modulName: selectedModule.value,
+      },
+      headers: { Authorization: 'Bearer ' + (localStorage.getItem('jwt') || '') }
+    });
+    const session = res.data;
+    coopSessionId.value = session.id;
+    currentQuestionIndex.value = 0;
+
+  } catch (err) {
+    console.error('Fehler beim Starten oder Beitreten zum Coop-Spiel', err);
+  }
+};
 
 const answerQuestion = async (index) => {
   const correct = questions.value[currentQuestionIndex.value].correctAnswerIndex
@@ -160,6 +231,7 @@ const resetGame = () => {
   selectedModule.value = ''
   invitedUser.value = ''
   questions.value = []
+  players.value = []
 }
 
 onBeforeRouteLeave((to, from, next) => {
@@ -177,6 +249,12 @@ onBeforeRouteLeave((to, from, next) => {
 
 onMounted(() => {
   loadSubjects()
+  loadOpenSessions()
+  pollingInterval = setInterval(loadOpenSessions, 5000)
+})
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval)
 })
 </script>
 
@@ -274,5 +352,20 @@ select, input, button {
 }
 .answer-button:hover {
   background-color: #f1f5f9;
+}
+.players-box {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+}
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 0.5rem;
 }
 </style>
