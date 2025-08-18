@@ -47,14 +47,16 @@
         <ul>
           <li v-for="session in openSessions" :key="session.id" class="session-item">
             <div>
-              <strong>{{ session.moduleName }}</strong> – Spieler:
+              <strong>{{ session.subjectName }}</strong>
+              <strong>{{ session.modulName }}</strong> – Spieler:
               <span v-for="p in session.players" :key="p.username">
                 {{ p.username }} ({{ p.email }})
+                {{}}
               </span>
             </div>
             <button
                 class="start-button"
-                @click="joinSession(session.id)"
+                @click="startOrJoinCoopGame(session)"
                 :disabled="session.players.length >= 4">
               Beitreten
             </button>
@@ -186,26 +188,41 @@ const startCoopGame = async () => {
   }
 }
 
-const startOrJoinCoopGame = async () => {
+// ... existing code ...
+const startOrJoinCoopGame = async (session = null) => {
   try {
+    let subjectId, modulId, subjectName, modulName;
+    if (session) {
+      subjectId = session.subjectId ?? session.subjectID ?? session.subject_id ?? session.subject; // Fallbacks
+      modulId = session.modulId ?? session.modulId ?? session.modulid ?? session.modul;
+      subjectName = session.subjectName ?? "";
+      modulName = session.modulName ?? "";
+    } else {
+      subjectId = selectedStudySubject.value;
+      modulId = selectedModule.value;
+      subjectName = selectedStudySubject.value;
+      modulName = selectedModule.value;
+    }
+
     const res = await api.post('/coop-session/start-or-join', {}, {
       params: {
-        subjectId: selectedStudySubject.value,
-        modulId: selectedModule.value,
+        subjectId,
+        modulId,
         amount: 10,
-        subjectName: selectedStudySubject.value,
-        modulName: selectedModule.value,
+        subjectName,
+        modulName,
       },
       headers: { Authorization: 'Bearer ' + (localStorage.getItem('jwt') || '') }
     });
-    const session = res.data;
-    coopSessionId.value = session.id;
+    const newSession = res.data;
+    coopSessionId.value = newSession.id;
     currentQuestionIndex.value = 0;
 
   } catch (err) {
     console.error('Fehler beim Starten oder Beitreten zum Coop-Spiel', err);
   }
 };
+// ... existing code ...
 
 const answerQuestion = async (index) => {
   const correct = questions.value[currentQuestionIndex.value].correctAnswerIndex

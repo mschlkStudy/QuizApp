@@ -11,15 +11,19 @@ public class CoopSessionDto {
     private List<QuestionDto> questions;
     private String subjectName;
     private String modulName;
+    private Long subjectId;
+    private Long modulId;
 
-    public CoopSessionDto(Long id, String status, List<UserDto> players, LocalDateTime startedAt, List<QuestionDto> questions, String subjectName, String modeName) {
+    public CoopSessionDto(Long id, String status, List<UserDto> players, LocalDateTime startedAt, List<QuestionDto> questions, String subjectName, String modulName, Long subjectId, Long modulId) {
         this.id = id;
         this.status = status;
         this.players = players;
         this.startedAt = startedAt;
         this.questions = questions;
         this.subjectName = subjectName;
-        this.modulName = modeName;
+        this.modulName = modulName;
+        this.subjectId = subjectId;
+        this.modulId = modulId;
     }
 
     public Long getId() {
@@ -69,6 +73,22 @@ public class CoopSessionDto {
 
     public void setModulName(String modulName) {
         this.modulName = modulName;
+    }
+
+    public Long getSubjectId() {
+        return subjectId;
+    }
+
+    public void setSubjectId(Long subjectId) {
+        this.subjectId = subjectId;
+    }
+
+    public Long getModulId() {
+        return modulId;
+    }
+
+    public void setModulId(Long modulId) {
+        this.modulId = modulId;
     }
 }
 

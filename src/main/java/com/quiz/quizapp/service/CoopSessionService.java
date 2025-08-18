@@ -127,7 +127,9 @@ public class CoopSessionService {
                 coopSession.getStartedAt(),
                 questionDtos,
                 coopSession.getSubjectName(),
-                coopSession.getModulName()
+                coopSession.getModulName(),
+                coopSession.getSubjectId(),
+                coopSession.getModulId()
         );
     }
 
