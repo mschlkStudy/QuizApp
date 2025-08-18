@@ -40,6 +40,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**", "/assets/**", "/login", "/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/questions").authenticated()
                 .requestMatchers("/api/gamesessions/**").authenticated()
                 .requestMatchers("/api/duels/**").authenticated()
