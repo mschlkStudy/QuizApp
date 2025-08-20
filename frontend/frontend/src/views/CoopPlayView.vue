@@ -37,26 +37,27 @@
         </select>
       </div>
 
-      <button class="start-button" @click="startOrJoinCoopGame" :disabled="!selectedModule">
+      <button class="start-button" @click="startCoopGame" :disabled="!selectedModule">
         Coop-Spiel starten
       </button>
 
       <!-- Laufende Sessions -->
       <div class="form-group" v-if="openSessions.length > 0">
         <h2>Laufende Coop-Sessions</h2>
+        <p>Finde nach dem Beitreten zu einer Coop-Session die Session in der Übersicht <br> Du gelangst über das Home-Icon dort hin zurück!</p>
         <ul>
           <li v-for="session in openSessions" :key="session.id" class="session-item">
             <div>
-              <strong>{{ session.subjectName }}</strong>
+              <strong>{{ session.subjectName }}</strong> -
               <strong>{{ session.modulName }}</strong> – Spieler:
               <span v-for="p in session.players" :key="p.username">
-                {{ p.username }} ({{ p.email }})
+                {{ p.username }} |
                 {{}}
               </span>
             </div>
             <button
                 class="start-button"
-                @click="startOrJoinCoopGame(session)"
+                @click="joinCoopGame(session)"
                 :disabled="session.players.length >= 4">
               Beitreten
             </button>
@@ -72,6 +73,7 @@
       <!-- Spielerübersicht -->
       <div class="players-box">
         <h3>Spieler</h3>
+        <p>Vernetze dich mit deinen Komilitonen über Teams, nutze dafür die unten eingeblendete(n) IU-E-Mail-Adresse(n)!</p>
         <ul>
           <li v-for="p in players" :key="p.username">
             {{ p.username }} ({{ p.email }})
@@ -129,6 +131,23 @@ let pollingInterval = null
 const route = useRoute()
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
 
+const username = ref('');
+
+function decodeJwt(token) {
+  try {
+    const payload = token.split('.')[1];
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const parsed = JSON.parse(json);
+    return parsed['username'] || parsed['sub'] || '';
+  } catch(err) {
+    return '';
+  }
+}
+
+
 const goToOverview = () => {
   router.push('/overview')
 }
@@ -157,11 +176,17 @@ const loadOpenSessions = async () => {
     const res = await api.get('/coop-session/overview/open', {
       headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
     })
-    openSessions.value = res.data
+    const myName = username.value;
+    openSessions.value = res.data.filter(session =>
+        Array.isArray(session.players) &&
+        !session.players.some(p => p.username === myName) &&
+        (session.players.length === 0 || session.players[0].username !== myName)
+    )
   } catch (err) {
     console.error('Fehler beim Laden der offenen Sessions', err)
   }
 }
+
 
 const startCoopGame = async () => {
   try {
@@ -188,23 +213,16 @@ const startCoopGame = async () => {
   }
 }
 
-// ... existing code ...
-const startOrJoinCoopGame = async (session = null) => {
+
+const joinCoopGame = async (session = null) => {
   try {
     let subjectId, modulId, subjectName, modulName;
-    if (session) {
-      subjectId = session.subjectId ?? session.subjectID ?? session.subject_id ?? session.subject; // Fallbacks
-      modulId = session.modulId ?? session.modulId ?? session.modulid ?? session.modul;
-      subjectName = session.subjectName ?? "";
-      modulName = session.modulName ?? "";
-    } else {
       subjectId = selectedStudySubject.value;
       modulId = selectedModule.value;
       subjectName = selectedStudySubject.value;
       modulName = selectedModule.value;
-    }
 
-    const res = await api.post('/coop-session/start-or-join', {}, {
+    const res = await api.post(`/coop-session/${session.id}/join`, {}, {
       params: {
         subjectId,
         modulId,
@@ -222,25 +240,34 @@ const startOrJoinCoopGame = async (session = null) => {
     console.error('Fehler beim Starten oder Beitreten zum Coop-Spiel', err);
   }
 };
-// ... existing code ...
 
-const answerQuestion = async (index) => {
-  const correct = questions.value[currentQuestionIndex.value].correctAnswerIndex
-  if (index === correct) score.value++
-  currentQuestionIndex.value++
-
+const answerQuestion = async (selectedIndex) => {
+  const currentQ = questions.value[currentQuestionIndex.value];
   try {
-    await api.post(`/coop-sessions/${coopSessionId.value}/answer`, {
-      questionIndex: currentQuestionIndex.value - 1,
-      chosenAnswer: index,
-      score: score.value
-    }, {
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
-    })
+    const res = await api.post(
+        `/coop-session/${coopSessionId.value}/answer`,
+        {
+          questionId: currentQ.id,
+          selectedAnswerIndex: selectedIndex
+        },
+        {
+          headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
+        }
+    );
+    const updatedSession = res.data;
+    questions.value = updatedSession.questions || questions.value;
+    players.value = updatedSession.players || players.value;
+    score.value = updatedSession.score || score.value;
+    currentQuestionIndex.value = updatedSession.currentQuestionIndex ?? currentQuestionIndex.value + 1;
+
+    if (currentQuestionIndex.value >= questions.value.length) {
+      questionsLoaded.value = true;
+    }
   } catch (err) {
-    console.error('Fehler beim Senden der Antwort', err)
+    console.error('Fehler beim Beantworten der Frage', err);
+    alert('Antwort konnte nicht gespeichert werden.');
   }
-}
+};
 
 const resetGame = () => {
   questionsLoaded.value = false
@@ -264,10 +291,42 @@ onBeforeRouteLeave((to, from, next) => {
   }
 })
 
-onMounted(() => {
-  loadSubjects()
-  loadOpenSessions()
-  pollingInterval = setInterval(loadOpenSessions, 5000)
+onMounted(async () => {
+  const jwt = localStorage.getItem('jwt');
+  if (jwt) username.value = decodeJwt(jwt);
+
+  let sessionData = null;
+  if (route.state && route.state.sessionData) {
+    sessionData = route.state.sessionData;
+  }
+
+  if (!sessionData && route.query && route.query.sessionId) {
+    try {
+      const res = await api.post(`/coop-session/${route.query.sessionId}/join`, {}, {
+        headers: { Authorization: 'Bearer ' + (localStorage.getItem('jwt') || '') }
+      });
+      sessionData = res.data;
+    } catch (e) {
+      alert("Session konnte nicht geladen werden.");
+      router.push("/overview");
+      return;
+    }
+  }
+
+  if (sessionData) {
+    coopSessionId.value = sessionData.id;
+    questions.value = sessionData.questions || [];
+    players.value = sessionData.players || [];
+    currentQuestionIndex.value = Number(route.query.startIndex) || sessionData.currentQuestionIndex || 0;
+    score.value = sessionData.score || 0;
+    questionsLoaded.value = true;
+
+    if (pollingInterval) clearInterval(pollingInterval);
+  } else {
+    loadSubjects();
+    loadOpenSessions();
+    pollingInterval = setInterval(loadOpenSessions, 5000);
+  }
 })
 
 onUnmounted(() => {

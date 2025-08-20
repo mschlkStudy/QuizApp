@@ -147,23 +147,6 @@ onBeforeRouteLeave((to, from, next) => {
   }
 })
 
-const loadDuelSession = async () => {
-  try {
-    const response = await api.get(`/ovierView/${sessionId.value}`, {
-      headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('jwt')
-      }
-    })
-    session.value = response.data;
-    questions.value = session.value.questions;
-    currentQuestionIndex.value = parseInt(route.query.startIndex) || session.value.currentQuestionIndex || 0;
-    player1score.value = session.value.score || 0;
-    questionsLoaded.value = true;
-    duelId.value = session.value.id;
-  } catch (error) {
-    console.error('Fehler beim Laden der Session:', error)
-  }
-}
 
 onMounted(async () => {
   const id = route.query.sessionId || route.query.duelId
@@ -172,7 +155,6 @@ onMounted(async () => {
     const res = await api.get(`/duels/${id}`, {
       headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
     })
-    // Jetzt die Felder setzen, wie es sonst mit startDuel gemacht wird
     questions.value = res.data.questions
     currentQuestionIndex.value = res.data.currentQuestionIndex || 0
     score.value = res.data.score || 0
@@ -207,7 +189,7 @@ const goToOverview = () => router.push('/overview')
 .home-button .icon {
   width: 32px;
   height: 32px;
-  color: #6b21a8; /* passender Lila-Ton */
+  color: #6b21a8;
   transition: transform 0.2s ease;
 }
 

@@ -21,7 +21,7 @@
           <p v-if="openSessions.length === 0">Keine offenen Sessions</p>
           <ul>
             <li v-for="session in openSessions" :key="session.id" class="session-item">
-              <strong>{{ session.studySubjectName }} – {{ session.modulName }}</strong> <br />
+              <strong>{{session.id}}: {{ session.studySubjectName }} – {{ session.modulName }}</strong> <br />
               Gestartet am: {{ formatDate(session.startedAt) }}
               <button @click="resumeSession(session)">Fortsetzen</button>
             </li>
@@ -32,7 +32,7 @@
           <p v-if="completedSessions.length === 0">Noch keine abgeschlossen</p>
           <ul>
             <li v-for="session in completedSessions" :key="session.id" class="session-item">
-              <strong>{{ session.studySubjectName }} – {{ session.modulName }} </strong><br />
+              <strong> {{session.id}}: {{ session.studySubjectName }} – {{ session.modulName }} </strong><br />
               Gestartet am: {{ formatDate(session.startedAt) }} <br />
               Punktzahl: <strong> {{session.score}} / {{session.questions?.length || '-'}}</strong>
             </li>
@@ -45,7 +45,7 @@
           <p v-if="openDuels.length === 0">Keine offenen Sessions</p>
           <ul>
             <li v-for="session in openDuels" :key="session.id" class="session-item">
-              <strong>{{ session.subjectName }} – {{ session.modulName }}</strong> <br />
+              <strong>{{session.id}}: {{ session.subjectName }} – {{ session.modulName }}</strong> <br />
               Player 1: {{session.player1}} || Player 2: {{session.player2}} <br />
               Status: {{session.status}} <br />
               <button @click="resumeDuellSession(session)">Fortsetzen</button>
@@ -57,7 +57,7 @@
           <p v-if="completedDuels.length === 0">Noch keine abgeschlossen</p>
           <ul>
             <li v-for="session in completedDuels" :key="session.id" class="session-item">
-              <strong>{{ session.subjectName }} – {{ session.modulName }} </strong><br />
+              <strong>{{session.duelId}}: {{ session.subjectName }} – {{ session.modulName }} </strong><br />
               <strong>Ergebnis:</strong>  {{session.player1Score}} / {{session.player2Score}}<br />
               <strong>Sieger:</strong>  {{session.winner}}
             </li>
@@ -70,10 +70,10 @@
           <p v-if="openCoopSessions.length === 0">Keine offenen Coop-Sessions</p>
           <ul>
             <li v-for="session in openCoopSessions" :key="session.id" class="session-item">
-              <strong>{{ session.subjectName }} – {{ session.modulName }}</strong> <br />
+              <strong>{{session.id}}: {{ session.subjectName }} – {{ session.modulName }}</strong> <br />
               Spieler: {{ session.players.map(p => p.username).join(', ') }} <br />
               Status: {{ session.status }} <br />
-              <button @click="joinSession(session)">Beitreten</button>
+              <button @click="joinSession(session)">Fortsetzen</button>
             </li>
           </ul>
         </div>
@@ -83,7 +83,7 @@
           <p v-if="completedCoopSessions.length === 0">Noch keine abgeschlossen</p>
           <ul>
             <li v-for="session in completedCoopSessions" :key="session.id" class="session-item">
-              <strong>{{ session.subjectName }} – {{ session.modulName }}</strong><br />
+              <strong>{{session.id}}: {{ session.subjectName }} – {{ session.modulName }}</strong><br />
               Spieler: {{ session.players.map(p => p.username).join(', ') }} <br />
               Ergebnis: {{ session.score }} / {{ session.questions?.length || '-' }}
             </li>
@@ -181,11 +181,15 @@ const loadCoopSessions = async () => {
     const resOpen = await api.get('/coop-session/overview/open', {
       headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
     });
-    openCoopSessions.value = resOpen.data;
+    const myName = username.value;
+    openCoopSessions.value = resOpen.data.filter(session =>
+        Array.isArray(session.players) && session.players.some(p => p.username === myName)
+    );
   } catch (error) {
     console.error('Fehler beim Laden der offenen CoopSessions:', error);
   }
 };
+
 
 const loadCompletedCoopSessions = async () => {
   try {
@@ -239,12 +243,12 @@ const resumeDuellSession = async (session) => {
   }
 };
 
-const resumeCoopSession = async (session) => {
+const joinSession = async (session) => {
   try {
-    const response = await api.get(`/coop-session/${session.id}/join`, {
+    const res = await api.post(`/coop-session/${session.id}/join`, {}, {
       headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
-    });
-    const sessionData = response.data;
+    })
+    const sessionData = res.data
     router.push({
       name: 'CoopPlay',
       query: {
@@ -252,32 +256,12 @@ const resumeCoopSession = async (session) => {
         startIndex: sessionData.currentQuestionIndex || 0
       },
       state: { sessionData }
-    });
-  } catch (error) {
-    console.error('Fehler beim Laden der Coop-Session:', error);
-    alert('Die Coop-Session konnte nicht geladen werden.');
-  }
-};
-
-const joinSession = async (session) => {
-  try {
-    const res = await api.post(`/coop-session/${session.id}/join`, {}, {
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('jwt') }
     })
-    const session = res.data
-    coopSessionId.value = session.id
-    questions.value = session.questions
-    players.value = session.players
-    currentQuestionIndex.value = 0
-    score.value = 0
-    questionsLoaded.value = true
   } catch (err) {
     console.error('Fehler beim Beitreten zur Session', err)
     alert('Konnte Session nicht beitreten.')
   }
 }
-
-
 
 const formatDate = (isoDate) => {
   const date = new Date(isoDate)

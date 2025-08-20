@@ -13,8 +13,10 @@ public class CoopSessionDto {
     private String modulName;
     private Long subjectId;
     private Long modulId;
+    private int currentQuestionIndex;
+    private int score;
 
-    public CoopSessionDto(Long id, String status, List<UserDto> players, LocalDateTime startedAt, List<QuestionDto> questions, String subjectName, String modulName, Long subjectId, Long modulId) {
+    public CoopSessionDto(Long id, String status, List<UserDto> players, LocalDateTime startedAt, List<QuestionDto> questions, String subjectName, String modulName, Long subjectId, Long modulId, int currentQuestionIndex, int score) {
         this.id = id;
         this.status = status;
         this.players = players;
@@ -24,6 +26,8 @@ public class CoopSessionDto {
         this.modulName = modulName;
         this.subjectId = subjectId;
         this.modulId = modulId;
+        this.currentQuestionIndex = currentQuestionIndex;
+        this.score = score;
     }
 
     public Long getId() {
@@ -89,6 +93,22 @@ public class CoopSessionDto {
 
     public void setModulId(Long modulId) {
         this.modulId = modulId;
+    }
+
+    public int getCurrentQuestionIndex() {
+        return currentQuestionIndex;
+    }
+
+    public void setCurrentQuestionIndex(int currentQuestionIndex) {
+        this.currentQuestionIndex = currentQuestionIndex;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
 }
 

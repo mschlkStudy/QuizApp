@@ -1,6 +1,7 @@
 package com.quiz.quizapp.controller;
 
 
+import com.quiz.quizapp.dto.AnswerDto;
 import com.quiz.quizapp.dto.GameSessionDto;
 import com.quiz.quizapp.entity.GameSession;
 import com.quiz.quizapp.security.JwtService;
@@ -41,7 +42,7 @@ public class GameSessionController {
     public void answer(@PathVariable Long id,
                        @RequestBody AnswerDto answer,
                        Principal principal) {
-        service.answerQuestion(id, answer.questionId(), answer.selectedAnswerIndex(), principal.getName());
+        service.answerQuestion(id, answer.getQuestionId(), answer.getSelectedAnswerIndex(), principal.getName());
     }
 
     @GetMapping("/{id}")
@@ -95,6 +96,5 @@ public class GameSessionController {
         return ResponseEntity.ok().build();
     }
 
-    public record AnswerDto(Long questionId, int selectedAnswerIndex) {}
 }
 

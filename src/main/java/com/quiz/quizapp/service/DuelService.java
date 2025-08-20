@@ -87,7 +87,6 @@ public class DuelService {
             session.setPlayer2Finished(true);
         }
 
-        // Wenn beide fertig → Status auf COMPLETED + Gewinner bestimmen
         if (Boolean.TRUE.equals(session.getPlayer1Finished()) && Boolean.TRUE.equals(session.getPlayer2Finished())) {
             session.setStatus(DuelStatus.COMPLETED);
 
@@ -107,16 +106,12 @@ public class DuelService {
         DuelSession session = duelSessionRepository.findById(duelId)
                 .orElseThrow(() -> new EntityNotFoundException("Duel session not found"));
 
-        // Spielername (nicht User-Objekt!) vergleichen
-        String currentUsername = username;
-
-        // Score für aktuellen Spieler
         Integer myScore;
         Integer opponentScore;
-        if (currentUsername.equals(session.getPlayer1())) {
+        if (username.equals(session.getPlayer1())) {
             myScore = session.getPlayer1Score();
             opponentScore = session.getPlayer2Score();
-        } else if (currentUsername.equals(session.getPlayer2())) {
+        } else if (username.equals(session.getPlayer2())) {
             myScore = session.getPlayer2Score();
             opponentScore = session.getPlayer1Score();
         } else {

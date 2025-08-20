@@ -38,6 +38,10 @@ public class CoopSession {
     private Long modulId;
     private String subjectName;
     private String modulName;
+    @Column(name = "current_question_index", nullable = true)
+    private int currentQuestionIndex;
+    @Column(nullable = true)
+    private int score;
 
     public enum CoopStatus {
         WAITING_FOR_PLAYERS,
@@ -126,6 +130,22 @@ public class CoopSession {
 
     public void setModulName(String modulName) {
         this.modulName = modulName;
+    }
+
+    public int getCurrentQuestionIndex() {
+        return currentQuestionIndex;
+    }
+
+    public void setCurrentQuestionIndex(int currentQuestionIndex) {
+        this.currentQuestionIndex = currentQuestionIndex;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
 }
 

@@ -1,5 +1,6 @@
 package com.quiz.quizapp.service;
 
+import com.quiz.quizapp.dto.AnswerDto;
 import com.quiz.quizapp.dto.CoopSessionDto;
 import com.quiz.quizapp.dto.QuestionDto;
 import com.quiz.quizapp.dto.UserDto;
@@ -24,13 +25,11 @@ public class CoopSessionService {
     private final CoopSessionRepository coopRepo;
     private final UserRepository userRepo;
     private final QuestionRepository questionRepo;
-    private final QuestionService questionService;
 
-    public CoopSessionService(CoopSessionRepository coopRepo, UserRepository userRepo, QuestionRepository questionRepo, QuestionService questionService) {
+    public CoopSessionService(CoopSessionRepository coopRepo, UserRepository userRepo, QuestionRepository questionRepo) {
         this.coopRepo = coopRepo;
         this.userRepo = userRepo;
         this.questionRepo = questionRepo;
-        this.questionService = questionService;
     }
 
     public CoopSession createSession(String username, Long subjectId, Long modulId, int amount, String subjectName, String modulName) {
@@ -71,30 +70,72 @@ public class CoopSessionService {
         return coopRepo.save(session);
     }
 
-    public CoopSessionDto startOrJoinSession(Long subjectId, Long modulId, int amount, String username, String subjectName, String modulName) {
-        // - Suche offene Session, max. 4 Spieler, korrektes Subject/Modul, User noch nicht dabei
-        CoopSession openSession = coopRepo.findBySubjectIdAndModulIdAndStatus(subjectId, modulId, CoopSession.CoopStatus.WAITING_FOR_PLAYERS)
-                .stream()
-                .filter(session -> session.getPlayers().size() < 4 &&
-                        session.getPlayers().stream().noneMatch(u -> u.getUsername().equals(username)))
-                .findFirst()
-                .orElse(null);
+    public CoopSession saveProgress(Long sessionId, String username, Integer currentQuestionIndex, Integer score) {
+        CoopSession session = coopRepo.findById(sessionId).orElseThrow();
 
-        User user = userRepo.findByUsername(username).orElseThrow();
-
-        if (openSession != null) {
-            openSession.addPlayer(user);
-
-            if (openSession.getPlayers().size() == 4) {
-                openSession.setStatus(CoopSession.CoopStatus.IN_PROGRESS);
-                openSession.setStartedAt(LocalDateTime.now());
-            }
-
-            coopRepo.save(openSession);
-            return toDto(openSession);
+        boolean isPlayer = session.getPlayers().stream().anyMatch(u -> u.getUsername().equals(username));
+        if (!isPlayer) {
+            throw new IllegalArgumentException("User is not part of this session");
         }
 
-        // -> Lege eine neue Session an
+        if (currentQuestionIndex != null) {
+            session.setCurrentQuestionIndex(currentQuestionIndex);
+        }
+        if (score != null) {
+            session.setScore(score);
+        }
+
+        coopRepo.save(session);
+        return session;
+    }
+
+    public CoopSession answerQuestion(Long sessionId, AnswerDto answerDto, String username) {
+        CoopSession session = coopRepo.findById(sessionId).orElseThrow();
+
+        boolean isPlayer = session.getPlayers().stream()
+                .anyMatch(u -> u.getUsername().equals(username));
+        if (!isPlayer) {
+            throw new IllegalArgumentException("User is not part of this coop session");
+        }
+
+        if (session.getStatus() == CoopSession.CoopStatus.COMPLETED) {
+            throw new IllegalStateException("Session already completed!");
+        }
+
+        int idx = session.getCurrentQuestionIndex();
+        List<Question> questions = session.getQuestions();
+
+        // Wenn keine weiteren Fragen mehr offen sind oder Index falsch: sauber abbrechen
+        if (questions == null || idx >= questions.size()) {
+            // Status jetzt sicher setzen
+            session.setStatus(CoopSession.CoopStatus.COMPLETED);
+            coopRepo.save(session);
+            throw new IllegalStateException("Keine weiteren Fragen vorhanden. Die Session ist bereits abgeschlossen.");
+        }
+
+        Question currentQuestion = questions.get(idx);
+
+        if (!currentQuestion.getId().equals(answerDto.getQuestionId())) {
+            throw new IllegalArgumentException("Falsche Frage");
+        }
+
+        if (currentQuestion.getCorrectAnswerIndex() == answerDto.getSelectedAnswerIndex()) {
+            session.setScore(session.getScore() + 1);
+        }
+        session.setCurrentQuestionIndex(idx + 1);
+
+        if (session.getCurrentQuestionIndex() >= questions.size()) {
+            session.setStatus(CoopSession.CoopStatus.COMPLETED);
+        }
+
+        return coopRepo.save(session);
+    }
+
+
+
+    public CoopSessionDto startSession(Long subjectId, Long modulId, int amount, String username, String subjectName, String modulName) {
+
+        User user = userRepo.findByUsername(username).orElseThrow();
         CoopSession session = new CoopSession();
         session.addPlayer(user);
         List<Question> questions = questionRepo.findRandomBySubjectModulId(modulId, amount);
@@ -108,8 +149,6 @@ public class CoopSessionService {
 
         return toDto(session);
     }
-
-
 
     public CoopSessionDto toDto(CoopSession coopSession) {
         List<UserDto> players = coopSession.getPlayers().stream()
@@ -129,7 +168,9 @@ public class CoopSessionService {
                 coopSession.getSubjectName(),
                 coopSession.getModulName(),
                 coopSession.getSubjectId(),
-                coopSession.getModulId()
+                coopSession.getModulId(),
+                coopSession.getCurrentQuestionIndex(),
+                coopSession.getScore()
         );
     }
 
