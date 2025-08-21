@@ -4,7 +4,7 @@
       <div class="user-info">Angemeldet als: {{ username }}</div>
       <button class="logout-button" @click="logout" title="Abmelden">🚪</button>
     </div>
-    <h1 class="title">Willkommen {{ username }}</h1>
+    <h1 class="title">Willkommen bei QuizDuett: {{ username }}</h1>
 
     <div class="grid">
       <button class="widget" @click="goToPlayAlone">🎮 Alleine spielen</button>
