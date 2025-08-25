@@ -115,9 +115,9 @@ public class CoopSessionService {
 
         Question currentQuestion = questions.get(idx);
 
-        if (!currentQuestion.getId().equals(answerDto.getQuestionId())) {
-            throw new IllegalArgumentException("Falsche Frage");
-        }
+//        if (!currentQuestion.getId().equals(answerDto.getQuestionId())) {
+//            throw new IllegalArgumentException("Falsche Frage");
+//        }
 
         if (currentQuestion.getCorrectAnswerIndex() == answerDto.getSelectedAnswerIndex()) {
             session.setScore(session.getScore() + 1);
